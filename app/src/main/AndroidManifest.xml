@@ -13,6 +13,11 @@
         android:theme="@style/Theme.Buggy"
         tools:targetApi="31">
         <activity
+            android:name=".BlueToothSelection"
+            android:exported="false"
+            android:label="@string/title_activity_blue_tooth_selection"
+            android:theme="@style/Theme.Buggy" />
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
