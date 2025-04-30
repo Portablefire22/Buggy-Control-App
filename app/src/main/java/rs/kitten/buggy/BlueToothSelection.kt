@@ -1,6 +1,8 @@
 package rs.kitten.buggy
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
@@ -18,6 +20,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,8 +69,12 @@ class BlueToothSelection : ComponentActivity() {
     private lateinit var bluetoothManager: BluetoothManager
     private var bluetoothAdapter: BluetoothAdapter? = null
     private val devices = BluetoothDeviceList()
+    private val discoveredDevices = BluetoothDeviceList()
 
     private var deviceCounter by mutableIntStateOf(0)
+    private var discoverCounter by mutableIntStateOf(0)
+
+    private var searchStatus by mutableStateOf("Inactive")
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,8 +89,9 @@ class BlueToothSelection : ComponentActivity() {
 
         requestPermissionLauncher.launch("android.permission.BLUETOOTH_SCAN")
         requestPermissionLauncher.launch("android.permission.BLUETOOTH_CONNECT")
+        requestPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
 
-        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+
         val perm = ContextCompat.checkSelfPermission(this,
             "android.permission.BLUETOOTH_SCAN")
 
@@ -100,6 +108,9 @@ class BlueToothSelection : ComponentActivity() {
             }
             activityResultLauncher.launch(enableBtIntent)
         }
+
+        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+        registerReceiver(receiver, filter)
 
 
         RefreshDevices(this)
@@ -166,7 +177,6 @@ class BlueToothSelection : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun BTSelectionContent(paddingValues: PaddingValues) {
-
         LazyColumn (
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -187,18 +197,58 @@ class BlueToothSelection : ComponentActivity() {
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
-            Log.println(Log.DEBUG, "Counter", deviceCounter.toString() + devices.Devices())
+           item() {
+               Text(
+                   text = "Paired devices ($deviceCounter)",
+                   modifier = Modifier.padding(16.dp)
+               )
+               Spacer(modifier = Modifier.height(16.dp))
+           }
             for (i in 0..<deviceCounter) {
                 val device = devices.Devices()[i]
-                Log.println(Log.INFO, "Q", device.toString())
                 item() {
-                    Box(
+                    FilledTonalButton(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
                             .height(intrinsicSize = IntrinsicSize.Max)
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(20.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        onClick = {
+                            val data = Intent()
+                            data.putExtra("device", device)
+                            setResult(Activity.RESULT_OK, data)
+                            finish()
+                        }
+                    ) {
+                        Text("$device: " + device.name, modifier = Modifier.padding(16.dp))
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+            item() {
+                Text(
+                    text = "Nearby devices ($discoverCounter)",
+                    modifier = Modifier.padding(16.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            for (i in 0..<discoverCounter) {
+                val device = discoveredDevices.Devices()[i]
+                item() {
+                    FilledTonalButton(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .height(intrinsicSize = IntrinsicSize.Max)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        onClick = {
+                            val data = Intent()
+                            data.putExtra("device", device)
+                            setResult(Activity.RESULT_OK, data)
+                            finish()
+                        }
                     ) {
                         Text("$device: " + device.name, modifier = Modifier.padding(16.dp))
                     }
@@ -213,7 +263,6 @@ class BlueToothSelection : ComponentActivity() {
     fun BlueToothRefresh(modifier: Modifier = Modifier) {
         val paddingValues = PaddingValues(8.dp)
         val context = LocalContext.current
-        var searchStatus = "NULL"
         Row (modifier = Modifier.fillMaxSize()){
             Text(
                 modifier = modifier
@@ -236,6 +285,21 @@ class BlueToothSelection : ComponentActivity() {
         }
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
+    fun discoverDevices(context: Context) {
+        discoveredDevices.Devices().clear()
+        discoverCounter = 0
+
+        bluetoothAdapter!!.startDiscovery()
+        searchStatus = "Searching"
+        Handler(Looper.getMainLooper()).postDelayed({
+            searchStatus = "Inactive"
+            bluetoothAdapter!!.cancelDiscovery()
+        }, 30000)
+
+
+    }
+
     fun RefreshDevices(context: Context): Int {
         val perm = ContextCompat.checkSelfPermission(
             context,
@@ -248,13 +312,35 @@ class BlueToothSelection : ComponentActivity() {
             pairedDevices?.forEach { device ->
                 devices.Insert(device)
                 i++
-                Log.println(Log.INFO, "rs.kitten.buggy.btDevices", devices.Devices().toString())
             }
             deviceCounter = i
+
+            discoverDevices(context)
         } else {
             return -1
         }
         return 0
+    }
+
+    // Create a BroadcastReceiver for ACTION_FOUND.
+    private val receiver = object : BroadcastReceiver() {
+
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+        override fun onReceive(context: Context, intent: Intent) {
+            val action: String = intent.action.toString()
+
+            when(action) {
+                BluetoothDevice.ACTION_FOUND -> {
+                    // Discovery has found a device. Get the BluetoothDevice
+                    // object and its info from the Intent.
+                    val device: BluetoothDevice =
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE,
+                            BluetoothDevice::class.java)!!
+                    discoveredDevices.Insert(device)
+                    discoverCounter++
+                }
+            }
+        }
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -280,8 +366,7 @@ class BlueToothSelection : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+
+        unregisterReceiver(receiver)
     }
 }
-
-
-

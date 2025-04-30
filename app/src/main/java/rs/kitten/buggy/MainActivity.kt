@@ -1,11 +1,19 @@
 package rs.kitten.buggy
 
+import android.Manifest
+import android.app.Activity
+import android.bluetooth.BluetoothClass.Device
+import android.bluetooth.BluetoothDevice
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Space
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.registerForActivityResult
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -38,6 +46,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -58,6 +67,9 @@ import androidx.core.content.ContextCompat.startActivity
 import rs.kitten.buggy.ui.theme.BuggyTheme
 
 class MainActivity : ComponentActivity() {
+
+    private var CurrentDevice: MutableState<BluetoothDevice?> = mutableStateOf(null)
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,32 +87,95 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ScreenContent(paddingValues: PaddingValues) {
-    LazyColumn (
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        contentPadding = PaddingValues(
-            top = paddingValues.calculateTopPadding() + 16.dp
-        )
-    ) {
-        item(10) {
-            Box(
-                modifier = Modifier.padding(horizontal = 16.dp)
-                    .height(200.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                BlueToothOptionsMain(modifier = Modifier.padding(8.dp))
+    private val intentLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val dev = result.data?.getParcelableExtra("device", BluetoothDevice::class.java)
+                Log.println(Log.INFO, "Nyaa", dev.toString())
             }
-            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+    @Composable
+    fun BlueToothOptionsMain(modifier: Modifier = Modifier) {
+        val context = LocalContext.current
+        val paddingValues = PaddingValues(8.dp)
+
+        var deviceText by remember { mutableStateOf("") }
+        val device = CurrentDevice.component1()
+        deviceText = if (device == null) {
+            "No Bluetooth device connected."
+        } else {
+            "${device.name}\n" +
+                    "UUID: ${device.uuids}\n" +
+                    "Bond State:${device.bondState}"
+        }
+
+        Column (modifier = Modifier.fillMaxSize()){
+            Text(
+                modifier = modifier.padding(paddingValues),
+                text = deviceText
+            )
+            Spacer(modifier.weight(1f))
+            FilledTonalButton(
+                modifier = modifier.align(Alignment.End)
+                    .padding(horizontal = paddingValues.calculateRightPadding(LayoutDirection.Ltr)),
+                onClick = {
+                    val intent = Intent(context, BlueToothSelection::class.java)
+                    intentLauncher.launch(intent)
+                }) {
+                Text("Select Device")
+            }
         }
     }
 
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun ScreenContent(paddingValues: PaddingValues) {
+        LazyColumn (
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(
+                top = paddingValues.calculateTopPadding() + 16.dp
+            )
+        ) {
+            item(10) {
+                Box(
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                        .height(200.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    BlueToothOptionsMain(modifier = Modifier.padding(8.dp))
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+    }
+
+
+
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @PreviewLightDark()
+    @Composable
+    fun Preview() {
+        BuggyTheme {
+            val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
+                state = rememberTopAppBarState()
+            )
+            Scaffold(
+                topBar = { TopBar(scrollBehavior = scrollBehavior, title = "Buggy Control") }
+            ) { paddingValues ->
+                ScreenContent(paddingValues)
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,44 +195,4 @@ fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavio
             )
         }
     )
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-fun BlueToothOptionsMain(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val paddingValues = PaddingValues(8.dp)
-    Column (modifier = Modifier.fillMaxSize()){
-        Text(
-            modifier = modifier.padding(paddingValues),
-            text = "No BlueTooth device connected"
-        )
-        Spacer(modifier.weight(1f))
-        FilledTonalButton(
-            modifier = modifier.align(Alignment.End)
-                .padding(horizontal = paddingValues.calculateRightPadding(LayoutDirection.Ltr)),
-            onClick = {
-                val intent = Intent(context, BlueToothSelection::class.java)
-                startActivity(context, intent, null)
-            }) {
-            Text("Select Device")
-        }
-    }
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@PreviewLightDark()
-@Composable
-fun Preview() {
-    BuggyTheme {
-        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(
-            state = rememberTopAppBarState()
-        )
-        Scaffold(
-            topBar = { TopBar(scrollBehavior = scrollBehavior, title = "Buggy Control") }
-        ) { paddingValues ->
-            ScreenContent(paddingValues)
-        }
-    }
 }
