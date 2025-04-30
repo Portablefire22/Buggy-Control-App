@@ -3,28 +3,22 @@ package rs.kitten.buggy
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.bluetooth.BluetoothClass.Device
 import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
-import android.widget.Space
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.registerForActivityResult
 import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,9 +27,12 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreVert
+
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -50,7 +47,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
@@ -59,7 +55,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -75,10 +70,11 @@ import androidx.core.content.ContextCompat.startActivity
 
 
 import rs.kitten.buggy.ui.theme.BuggyTheme
+import kotlin.math.exp
 
 class MainActivity : ComponentActivity() {
 
-    private var CurrentDevice: MutableState<BluetoothDevice?>? by mutableStateOf(null)
+    private var currentDevice: MutableState<BluetoothDevice?>? by mutableStateOf(null)
     private var deviceText by mutableStateOf("No Bluetooth device connected.")
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -119,17 +115,17 @@ class MainActivity : ComponentActivity() {
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private val intentLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
                 val device = result.data?.getParcelableExtra("device", BluetoothDevice::class.java)
                 if (device != null) {
-                    CurrentDevice = mutableStateOf(device)
+                    currentDevice = mutableStateOf(device)
                     updateBluetoothInformation()
                 }
             }
         }
 
     private fun updateBluetoothInformation() {
-        val device = CurrentDevice?.value
+        val device = currentDevice?.value
         deviceText = if (device == null) {
             "No Bluetooth device connected."
         } else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
@@ -142,7 +138,6 @@ class MainActivity : ComponentActivity() {
                         BluetoothDevice.BOND_NONE -> "Disconnected"
                         else -> "null"
                     }
-
         } else {
             "Application was denied Bluetooth.\nThe application will " +
                     "not function."
@@ -174,7 +169,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 
     @Composable
     fun ScreenContent(paddingValues: PaddingValues, context: Context) {
@@ -232,6 +226,8 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavior, title: String) {
+    var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     TopAppBar(
         modifier = modifier,
         scrollBehavior = scrollBehavior,
@@ -244,6 +240,29 @@ fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavio
                 color = MaterialTheme.colorScheme.onBackground.copy(1f),
                 fontSize = 17.sp
             )
+        },
+        actions = {
+            IconButton(onClick = {
+                expanded = true
+            }) { Icon(
+                imageVector = Icons.Filled.MoreVert,
+                contentDescription = "More",
+            ) }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = {expanded = false}
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Information") },
+                    leadingIcon = {
+                        Icon (Icons.Filled.Info, "Information")
+                    },
+                    onClick = {
+                        val intent = Intent(context, ApplicationInformation::class.java)
+                        startActivity(context, intent, null)
+                    },
+                )
+            }
         }
     )
 }

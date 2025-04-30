@@ -1,3 +1,7 @@
+import com.android.build.api.variant.BuildConfigField
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -37,8 +41,25 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
+
+androidComponents {
+    onVariants {
+
+        val buildTime = LocalDateTime.now()
+
+        val formatter = DateTimeFormatter.ofPattern("yyy-MM-dd HH:mm:ss")
+
+        it.buildConfigFields.put(
+            "BUILD_TIME", BuildConfigField(
+                "String", "\"${buildTime.format(formatter).toString()}\"", "build Date"
+            )
+        )
+    }
+}
+
 
 dependencies {
 
@@ -53,6 +74,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.preference)
     implementation(libs.material)
+    implementation(libs.places)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -66,4 +88,8 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:1.3.2")
     //noinspection UseTomlInstead
     implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.4.0-alpha13")
+    //noinspection UseTomlInstead
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
+    //noinspection UseTomlInstead
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 }

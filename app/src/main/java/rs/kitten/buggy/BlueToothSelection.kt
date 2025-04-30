@@ -75,7 +75,7 @@ class BlueToothSelection : ComponentActivity() {
     private var deviceCounter by mutableIntStateOf(0)
     private var discoverCounter by mutableIntStateOf(0)
 
-    private var searchStatus by mutableStateOf("Inactive")
+    private var searchStatus by mutableStateOf("Idle")
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -258,7 +258,7 @@ class BlueToothSelection : ComponentActivity() {
         bluetoothAdapter!!.startDiscovery()
         searchStatus = "Searching"
         Handler(Looper.getMainLooper()).postDelayed({
-            searchStatus = "Inactive"
+            searchStatus = "Idle"
             bluetoothAdapter!!.cancelDiscovery()
         }, 30000)
 
