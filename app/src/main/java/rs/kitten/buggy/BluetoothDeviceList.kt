@@ -7,16 +7,20 @@ import kotlin.reflect.KProperty
 class BluetoothDeviceList : Serializable {
     private val devices =  mutableListOf<BluetoothDevice>()
 
-    fun Insert(device: BluetoothDevice) {
+    fun insert(device: BluetoothDevice) {
         devices.add(device)
     }
 
-    fun Remove(device: BluetoothDevice) {
+    fun remove(device: BluetoothDevice) {
         devices.remove(device)
     }
 
-    fun Devices(): MutableList<BluetoothDevice> {
+    fun getDevices(): MutableList<BluetoothDevice> {
         return this.devices
+    }
+
+    fun length(): Int {
+        return devices.size
     }
 
     operator fun getValue(thisRef: Any?, property: KProperty<*>): Int {

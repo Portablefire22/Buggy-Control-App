@@ -3,14 +3,19 @@ package rs.kitten.buggy
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
@@ -70,7 +75,6 @@ import androidx.core.content.ContextCompat.startActivity
 
 
 import rs.kitten.buggy.ui.theme.BuggyTheme
-import kotlin.math.exp
 
 class MainActivity : ComponentActivity() {
 
@@ -81,7 +85,27 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        requestPermissions()
+        BuggyBluetooth.SetContext(this.applicationContext);
+
+        if (BuggyBluetooth.getAdapter()?.isEnabled == false) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            val activityResultLauncher = registerForActivityResult<Intent, ActivityResult>(
+                ActivityResultContracts.StartActivityForResult()
+            ) { result: ActivityResult ->
+                if (result.resultCode == RESULT_OK) {
+                    Log.e("Activity result", "OK")
+                    // There are no request codes
+                    val data = result.data
+                }
+            }
+
+            activityResultLauncher.launch(enableBtIntent)
+        }
+
+        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND) // Create a BroadcastReceiver for ACTION_FOUND.
+        registerReceiver(BuggyBluetooth.receiver, filter)
+
+        RequestPermissions()
 
         enableEdgeToEdge()
         setContent {
@@ -98,7 +122,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestPermissions() {
+    fun RequestPermissions() {
         val requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()
             ) {}

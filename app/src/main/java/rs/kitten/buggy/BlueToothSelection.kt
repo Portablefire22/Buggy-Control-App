@@ -62,15 +62,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import rs.kitten.buggy.BuggyBluetooth.appContext
 import rs.kitten.buggy.ui.theme.BuggyTheme
 
 
 class BlueToothSelection : ComponentActivity() {
-
-    private lateinit var bluetoothManager: BluetoothManager
-    private var bluetoothAdapter: BluetoothAdapter? = null
-    private val devices = BluetoothDeviceList()
-    private val discoveredDevices = BluetoothDeviceList()
 
     private var deviceCounter by mutableIntStateOf(0)
     private var discoverCounter by mutableIntStateOf(0)
@@ -81,33 +77,9 @@ class BlueToothSelection : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        bluetoothManager = getSystemService(BluetoothManager::class.java)
-        bluetoothAdapter  = bluetoothManager.adapter
-
-
-
-
-        val perm = ContextCompat.checkSelfPermission(this,
+        val perm = ContextCompat.checkSelfPermission(
+            appContext,
             "android.permission.BLUETOOTH_SCAN")
-
-        if (bluetoothAdapter?.isEnabled == false) {
-            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            val activityResultLauncher = registerForActivityResult<Intent, ActivityResult>(
-                ActivityResultContracts.StartActivityForResult()
-            ) { result: ActivityResult ->
-                if (result.resultCode == RESULT_OK) {
-                    Log.e("Activity result", "OK")
-                    // There are no request codes
-                    val data = result.data
-                }
-            }
-            activityResultLauncher.launch(enableBtIntent)
-        }
-
-        val filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
-        registerReceiver(receiver, filter)
-
-
         RefreshDevices(this)
 
         enableEdgeToEdge()
@@ -123,7 +95,7 @@ class BlueToothSelection : ComponentActivity() {
                     BTSelectionContent(paddingValues)
                 }
 
-                if (bluetoothAdapter == null) {
+                if (BuggyBluetooth.getAdapter() == null) {
                     ErrorAlert("Device does not support Bluetooth")
                 }
                 if (perm == PackageManager.PERMISSION_DENIED) {
@@ -166,7 +138,7 @@ class BlueToothSelection : ComponentActivity() {
                Spacer(modifier = Modifier.height(16.dp))
            }
             for (i in 0..<deviceCounter) {
-                val device = devices.Devices()[i]
+                val device = BuggyBluetooth.getPairedDevices(null)[i]
                 item() {
                     FilledTonalButton(
                         modifier = Modifier
@@ -195,7 +167,7 @@ class BlueToothSelection : ComponentActivity() {
                 Spacer(modifier = Modifier.height(16.dp))
             }
             for (i in 0..<discoverCounter) {
-                val device = discoveredDevices.Devices()[i]
+                val device = BuggyBluetooth.getDiscoveredDevices(null)[i]
                 item() {
                     FilledTonalButton(
                         modifier = Modifier
@@ -250,62 +222,30 @@ class BlueToothSelection : ComponentActivity() {
         }
     }
 
-    @RequiresPermission(Manifest.permission.BLUETOOTH_SCAN)
-    fun discoverDevices(context: Context) {
-        discoveredDevices.Devices().clear()
-        discoverCounter = 0
-
-        bluetoothAdapter!!.startDiscovery()
-        searchStatus = "Searching"
-        Handler(Looper.getMainLooper()).postDelayed({
-            searchStatus = "Idle"
-            bluetoothAdapter!!.cancelDiscovery()
-        }, 30000)
-
-
-    }
-
-    fun RefreshDevices(context: Context): Int {
+    private fun RefreshDevices(context: Context): Int {
         val perm = ContextCompat.checkSelfPermission(
             context,
             "android.permission.BLUETOOTH_SCAN")
         if (perm == PackageManager.PERMISSION_GRANTED) {
-            val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
-            var i = 0
-            deviceCounter = 0
-            devices.Devices().clear()
-            pairedDevices?.forEach { device ->
-                devices.Insert(device)
-                i++
-            }
-            deviceCounter = i
-
-            discoverDevices(context)
+            deviceCounter = BuggyBluetooth.getPairedDevices(null).size
+            BuggyBluetooth.DiscoverDevices()
+            searchStatus = "Searching"
+            delayRefresh()
         } else {
             return -1
         }
         return 0
     }
 
-    // Create a BroadcastReceiver for ACTION_FOUND.
-    private val receiver = object : BroadcastReceiver() {
-
-        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-        override fun onReceive(context: Context, intent: Intent) {
-            val action: String = intent.action.toString()
-
-            when(action) {
-                BluetoothDevice.ACTION_FOUND -> {
-                    // Discovery has found a device. Get the BluetoothDevice
-                    // object and its info from the Intent.
-                    val device: BluetoothDevice =
-                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE,
-                            BluetoothDevice::class.java)!!
-                    discoveredDevices.Insert(device)
-                    discoverCounter++
-                }
+    private fun delayRefresh(i: Int = 0) {
+        Handler(Looper.getMainLooper()).postDelayed({
+            discoverCounter = BuggyBluetooth.getDiscoveredDevices(null).size
+            if (i != 12) {
+                delayRefresh(i + 1)
+            } else {
+                searchStatus = "Idle"
             }
-        }
+        }, 2500)
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -329,9 +269,5 @@ class BlueToothSelection : ComponentActivity() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
 
-        unregisterReceiver(receiver)
-    }
 }
