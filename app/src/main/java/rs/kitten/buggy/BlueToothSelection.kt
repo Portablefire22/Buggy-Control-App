@@ -38,6 +38,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
@@ -83,13 +84,7 @@ class BlueToothSelection : ComponentActivity() {
         bluetoothManager = getSystemService(BluetoothManager::class.java)
         bluetoothAdapter  = bluetoothManager.adapter
 
-        val requestPermissionLauncher =
-            registerForActivityResult(ActivityResultContracts.RequestPermission()
-            ) {}
 
-        requestPermissionLauncher.launch("android.permission.BLUETOOTH_SCAN")
-        requestPermissionLauncher.launch("android.permission.BLUETOOTH_CONNECT")
-        requestPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
 
 
         val perm = ContextCompat.checkSelfPermission(this,
@@ -139,40 +134,6 @@ class BlueToothSelection : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun ErrorAlert(text: String) {
-        val openDialog = remember { mutableStateOf(true) }
-        if (!openDialog.value) {
-            return
-        }
-        BasicAlertDialog(
-            onDismissRequest = {
-                openDialog.value = false
-            }
-        ){             Surface (
-            modifier = Modifier
-                .wrapContentWidth()
-                .wrapContentHeight(),
-            shape = MaterialTheme.shapes.large,
-            tonalElevation = AlertDialogDefaults.TonalElevation
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = text,
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                TextButton (
-                    onClick = { openDialog.value = false },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Confirm")
-                }
-            }
-        }
-        }
-    }
-
     @SuppressLint("MissingPermission")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -212,8 +173,8 @@ class BlueToothSelection : ComponentActivity() {
                             .padding(horizontal = 16.dp)
                             .height(intrinsicSize = IntrinsicSize.Max)
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer),
+                            .clip(RoundedCornerShape(20.dp)),
+                        colors = ButtonDefaults.buttonColors(),
                         onClick = {
                             val data = Intent()
                             data.putExtra("device", device)
@@ -241,8 +202,8 @@ class BlueToothSelection : ComponentActivity() {
                             .padding(horizontal = 16.dp)
                             .height(intrinsicSize = IntrinsicSize.Max)
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer),
+                            .clip(RoundedCornerShape(20.dp)),
+                        colors = ButtonDefaults.buttonColors(),
                         onClick = {
                             val data = Intent()
                             data.putExtra("device", device)
@@ -254,6 +215,9 @@ class BlueToothSelection : ComponentActivity() {
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+            }
+            item() {
+                Spacer(modifier = Modifier.height(48.dp))
             }
         }
     }
@@ -275,6 +239,7 @@ class BlueToothSelection : ComponentActivity() {
                 modifier = modifier
                     .align(alignment = Alignment.CenterVertically)
                     .padding(paddingValues),
+                colors = ButtonDefaults.buttonColors(),
                 onClick = {
                     if (RefreshDevices(context) < 0) {
                         searchStatus = "Missing permissions"

@@ -1,10 +1,13 @@
 package rs.kitten.buggy
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.bluetooth.BluetoothClass.Device
 import android.bluetooth.BluetoothDevice
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Space
@@ -26,8 +29,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -39,7 +46,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
@@ -61,6 +70,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat.startActivity
 
 
@@ -68,11 +78,15 @@ import rs.kitten.buggy.ui.theme.BuggyTheme
 
 class MainActivity : ComponentActivity() {
 
-    private var CurrentDevice: MutableState<BluetoothDevice?> = mutableStateOf(null)
+    private var CurrentDevice: MutableState<BluetoothDevice?>? by mutableStateOf(null)
+    private var deviceText by mutableStateOf("No Bluetooth device connected.")
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        requestPermissions()
+
         enableEdgeToEdge()
         setContent {
             BuggyTheme {
@@ -82,19 +96,58 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     topBar = { TopBar(scrollBehavior = scrollBehavior, title = "Buggy Control") }
                 ) { paddingValues ->
-                    ScreenContent(paddingValues)
+                    ScreenContent(paddingValues, this)
                 }
             }
         }
     }
 
+    private fun requestPermissions() {
+        val requestPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()
+            ) {}
+        val permissions: Array<String> = arrayOf(
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.BLUETOOTH_ADMIN,
+        )
+        requestPermissionLauncher.launch(permissions)
+    }
+
+    @SuppressLint("MissingPermission")
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private val intentLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                val dev = result.data?.getParcelableExtra("device", BluetoothDevice::class.java)
-                Log.println(Log.INFO, "Nyaa", dev.toString())
+                val device = result.data?.getParcelableExtra("device", BluetoothDevice::class.java)
+                if (device != null) {
+                    CurrentDevice = mutableStateOf(device)
+                    updateBluetoothInformation()
+                }
             }
         }
+
+    private fun updateBluetoothInformation() {
+        val device = CurrentDevice?.value
+        deviceText = if (device == null) {
+            "No Bluetooth device connected."
+        } else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            "${device.name}\n" +
+                    "Address: ${device.address}\n" +
+                    "Bond State: " +
+                    when (device.bondState) {
+                        BluetoothDevice.BOND_BONDING -> "Connecting"
+                        BluetoothDevice.BOND_BONDED -> "Connected"
+                        BluetoothDevice.BOND_NONE -> "Disconnected"
+                        else -> "null"
+                    }
+
+        } else {
+            "Application was denied Bluetooth.\nThe application will " +
+                    "not function."
+        }
+    }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -103,16 +156,6 @@ class MainActivity : ComponentActivity() {
         val context = LocalContext.current
         val paddingValues = PaddingValues(8.dp)
 
-        var deviceText by remember { mutableStateOf("") }
-        val device = CurrentDevice.component1()
-        deviceText = if (device == null) {
-            "No Bluetooth device connected."
-        } else {
-            "${device.name}\n" +
-                    "UUID: ${device.uuids}\n" +
-                    "Bond State:${device.bondState}"
-        }
-
         Column (modifier = Modifier.fillMaxSize()){
             Text(
                 modifier = modifier.padding(paddingValues),
@@ -120,6 +163,7 @@ class MainActivity : ComponentActivity() {
             )
             Spacer(modifier.weight(1f))
             FilledTonalButton(
+                colors = ButtonDefaults.buttonColors(),
                 modifier = modifier.align(Alignment.End)
                     .padding(horizontal = paddingValues.calculateRightPadding(LayoutDirection.Ltr)),
                 onClick = {
@@ -132,9 +176,19 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun ScreenContent(paddingValues: PaddingValues) {
+    fun ScreenContent(paddingValues: PaddingValues, context: Context) {
+
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ErrorAlert("Application was denied Bluetooth. The application will " +
+                    "not function.")
+            return
+        }
+
         LazyColumn (
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -158,9 +212,6 @@ class MainActivity : ComponentActivity() {
 
     }
 
-
-
-
     @OptIn(ExperimentalMaterial3Api::class)
     @PreviewLightDark()
     @Composable
@@ -172,7 +223,7 @@ class MainActivity : ComponentActivity() {
             Scaffold(
                 topBar = { TopBar(scrollBehavior = scrollBehavior, title = "Buggy Control") }
             ) { paddingValues ->
-                ScreenContent(paddingValues)
+                ScreenContent(paddingValues, this)
             }
         }
     }
@@ -195,4 +246,38 @@ fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavio
             )
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ErrorAlert(text: String) {
+    val openDialog = remember { mutableStateOf(true) }
+    if (!openDialog.value) {
+        return
+    }
+    BasicAlertDialog(
+        onDismissRequest = {
+            openDialog.value = false
+        }
+    ){             Surface (
+        modifier = Modifier
+            .wrapContentWidth()
+            .wrapContentHeight(),
+        shape = MaterialTheme.shapes.large,
+        tonalElevation = AlertDialogDefaults.TonalElevation
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = text,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            TextButton (
+                onClick = { openDialog.value = false },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("Confirm")
+            }
+        }
+    }
+    }
 }
