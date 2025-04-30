@@ -11,6 +11,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -144,6 +146,12 @@ class MainActivity : ComponentActivity() {
                 if (device != null) {
                     currentDevice = mutableStateOf(device)
                     updateBluetoothInformation()
+
+                    BuggyBluetooth.connect(device)
+
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        BuggyBluetooth.disconnect()
+                    }, 5000)
                 }
             }
         }

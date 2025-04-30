@@ -5,11 +5,13 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothServerSocket
+import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -28,7 +30,8 @@ object BuggyBluetooth {
     private var bluetoothManager: BluetoothManager? = null
     private var bluetoothAdapter: BluetoothAdapter? = null
 
-    private var bluetoothSocket: BluetoothServerSocket? = null
+    private var bluetoothSocket: BluetoothSocket? = null
+
 
     lateinit var appContext: Context
 
@@ -58,13 +61,22 @@ object BuggyBluetooth {
             }
         }
     }
-    private fun connectBT(device: BluetoothDevice) {
-        val bluetoothSocket = device.createRfcommSocketToServiceRecord(
-            UUID.fromString("3217eb42-92c7-43ab-b901-f7ac7f15345c"))
+    fun connect(device: BluetoothDevice) {
+        bluetoothSocket = device
+            .createInsecureRfcommSocketToServiceRecord(
+                UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
+        bluetoothAdapter?.cancelDiscovery()
+        bluetoothSocket?.connect()
+        currentDevice = mutableStateOf( device)
+        Log.println(Log.INFO, "rs.kitten.buggy.BT", "Connected: ${bluetoothSocket.toString()}")
+    }
 
-        bluetoothSocket.connect()
-
-
+    fun disconnect() {
+        if (bluetoothSocket != null) {
+            bluetoothSocket?.close()
+            Log.println(Log.INFO, "rs.kitten.buggy.BT", "Disconnected: ${currentDevice.toString()}")
+            currentDevice = null
+        }
     }
 
 
