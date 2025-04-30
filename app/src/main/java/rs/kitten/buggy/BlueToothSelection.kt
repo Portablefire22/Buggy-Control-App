@@ -1,15 +1,9 @@
 package rs.kitten.buggy
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
@@ -18,12 +12,8 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -32,28 +22,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialogDefaults
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -137,27 +120,34 @@ class BlueToothSelection : ComponentActivity() {
                )
                Spacer(modifier = Modifier.height(16.dp))
            }
-            for (i in 0..<deviceCounter) {
-                val device = BuggyBluetooth.getPairedDevices(null)[i]
-                item() {
-                    FilledTonalButton(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .height(intrinsicSize = IntrinsicSize.Max)
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp)),
-                        colors = ButtonDefaults.buttonColors(),
-                        onClick = {
-                            val data = Intent()
-                            data.putExtra("device", device)
-                            setResult(Activity.RESULT_OK, data)
-                            finish()
+            try {
+                var dC = mutableStateOf(0)
+                var devList = BuggyBluetooth.getPairedDevices(dC).toMutableList()
+                deviceCounter = dC.value
+                for (i in 0..<deviceCounter) {
+                    val device = devList[i]
+                    item() {
+                        FilledTonalButton(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .height(intrinsicSize = IntrinsicSize.Max)
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(20.dp)),
+                            colors = ButtonDefaults.buttonColors(),
+                            onClick = {
+                                val data = Intent()
+                                data.putExtra("device", device)
+                                setResult(Activity.RESULT_OK, data)
+                                finish()
+                            }
+                        ) {
+                            Text("$device: " + device.name, modifier = Modifier.padding(16.dp))
                         }
-                    ) {
-                        Text("$device: " + device.name, modifier = Modifier.padding(16.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
+            } catch (e: Exception) {
+                Log.println(Log.ERROR, "ER", e.toString())
             }
             item() {
                 Text(
@@ -166,8 +156,12 @@ class BlueToothSelection : ComponentActivity() {
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
+            var dC = mutableStateOf(0)
+            val devList = BuggyBluetooth.getDiscoveredDevices(dC).toMutableList()
+            discoverCounter = dC.value
+            try {
             for (i in 0..<discoverCounter) {
-                val device = BuggyBluetooth.getDiscoveredDevices(null)[i]
+                val device = devList[i]
                 item() {
                     FilledTonalButton(
                         modifier = Modifier
@@ -187,7 +181,9 @@ class BlueToothSelection : ComponentActivity() {
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-            }
+            } } catch (e: Exception) {
+            Log.println(Log.ERROR, "ER", e.toString())
+        }
             item() {
                 Spacer(modifier = Modifier.height(48.dp))
             }
@@ -240,7 +236,7 @@ class BlueToothSelection : ComponentActivity() {
     private fun delayRefresh(i: Int = 0) {
         Handler(Looper.getMainLooper()).postDelayed({
             discoverCounter = BuggyBluetooth.getDiscoveredDevices(null).size
-            if (i != 12) {
+            if (i != 11) {
                 delayRefresh(i + 1)
             } else {
                 searchStatus = "Idle"

@@ -8,13 +8,8 @@ import android.bluetooth.BluetoothServerSocket
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -63,9 +58,12 @@ object BuggyBluetooth {
             }
         }
     }
-    private fun connectBT() {
-        val bluetoothSocket = bluetoothAdapter?.listenUsingRfcommWithServiceRecord("Kitten.rs",
+    private fun connectBT(device: BluetoothDevice) {
+        val bluetoothSocket = device.createRfcommSocketToServiceRecord(
             UUID.fromString("3217eb42-92c7-43ab-b901-f7ac7f15345c"))
+
+        bluetoothSocket.connect()
+
 
     }
 

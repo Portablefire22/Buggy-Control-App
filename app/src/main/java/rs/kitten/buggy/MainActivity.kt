@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        BuggyBluetooth.SetContext(this.applicationContext);
+        BuggyBluetooth.SetContext(this)
 
         if (BuggyBluetooth.getAdapter()?.isEnabled == false) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
