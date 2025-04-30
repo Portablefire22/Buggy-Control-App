@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity() {
                     state = rememberTopAppBarState()
                 )
                 Scaffold(
-                    topBar = { TopBar(scrollBehavior = scrollBehavior) }
+                    topBar = { TopBar(scrollBehavior = scrollBehavior, title = "Buggy Control") }
                 ) { paddingValues ->
                     ScreenContent(paddingValues)
                 }
@@ -93,7 +93,7 @@ fun ScreenContent(paddingValues: PaddingValues) {
                     .height(200.dp)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.inversePrimary)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
             ) {
                 BlueToothOptionsMain(modifier = Modifier.padding(8.dp))
             }
@@ -105,7 +105,7 @@ fun ScreenContent(paddingValues: PaddingValues) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavior) {
+fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavior, title: String) {
     TopAppBar(
         modifier = modifier,
         scrollBehavior = scrollBehavior,
@@ -114,7 +114,7 @@ fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavio
         ),
         title = {
             Text(
-                text = "Buggy Control",
+                text = title,
                 color = MaterialTheme.colorScheme.onBackground.copy(1f),
                 fontSize = 17.sp
             )
@@ -155,7 +155,7 @@ fun Preview() {
             state = rememberTopAppBarState()
         )
         Scaffold(
-            topBar = { TopBar(scrollBehavior = scrollBehavior) }
+            topBar = { TopBar(scrollBehavior = scrollBehavior, title = "Buggy Control") }
         ) { paddingValues ->
             ScreenContent(paddingValues)
         }
