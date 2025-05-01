@@ -76,6 +76,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat.startActivity
 
 
+
 import rs.kitten.buggy.ui.theme.BuggyTheme
 
 class MainActivity : ComponentActivity() {
@@ -257,7 +258,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalUnsignedTypes::class)
 @Composable
 fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavior, title: String) {
     var expanded by remember { mutableStateOf(false) }
@@ -278,6 +279,9 @@ fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavio
         actions = {
             IconButton(onClick = {
                 expanded = true
+                val pac = BuggyPacket(3u)
+                pac.setData(25u)
+                BuggyBluetooth.write(pac.toBytes())
             }) { Icon(
                 imageVector = Icons.Filled.MoreVert,
                 contentDescription = "More",

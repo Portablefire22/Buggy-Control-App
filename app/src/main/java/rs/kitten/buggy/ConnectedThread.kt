@@ -29,9 +29,10 @@ class ConnectedThread(socket: BluetoothSocket) : Thread() {
         }
     }
 
-    public fun write(byteArray: ByteArray) {
+    @OptIn(ExperimentalUnsignedTypes::class)
+    public fun write(byteArray: UByteArray) {
         try {
-            mOutStream.write(byteArray)
+            mOutStream.write(byteArray.toByteArray())
         } catch (e: IOException) {
             Log.e("ConnectedThread", "IO Error writing", e)
         }

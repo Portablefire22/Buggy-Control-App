@@ -65,6 +65,7 @@ object BuggyBluetooth {
             }
         }
     }
+    @OptIn(ExperimentalUnsignedTypes::class)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun connect(device: BluetoothDevice) {
         if (ActivityCompat.checkSelfPermission(
@@ -89,7 +90,7 @@ object BuggyBluetooth {
         if (bluetoothSocket != null) {
             connectedThread = ConnectedThread(socket = bluetoothSocket!!)
             connectedThread.start()
-            connectedThread.write("Hello\r\n".encodeToByteArray())
+
         }
         Log.println(Log.INFO, "rs.kitten.buggy.BT", "Connected: ${bluetoothSocket.toString()}")
     }
@@ -97,8 +98,8 @@ object BuggyBluetooth {
     fun disconnect() {
         if (bluetoothSocket != null) {
             bluetoothSocket?.close()
-            val toast = Toast.makeText(appContext, "Disconnected", Toast.LENGTH_SHORT)
-            toast.show()
+            //val toast = Toast.makeText(appContext, "Disconnected", Toast.LENGTH_SHORT)
+            //toast.show()
             Log.println(Log.INFO, "rs.kitten.buggy.BT", "Disconnected: ${currentDevice.toString()}")
             currentDevice = null
         }
@@ -143,4 +144,8 @@ object BuggyBluetooth {
     }
 
 
+    @OptIn(ExperimentalUnsignedTypes::class)
+    fun write(data: UByteArray) {
+        connectedThread.write(data)
+    }
 }
