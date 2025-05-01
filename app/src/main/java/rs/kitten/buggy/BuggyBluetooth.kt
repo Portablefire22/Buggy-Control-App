@@ -25,7 +25,6 @@ import java.util.UUID
 
 object BuggyBluetooth {
     var currentDevice: MutableState<BluetoothDevice?>? by mutableStateOf(null)
-    var deviceText by mutableStateOf("No Bluetooth device connected.")
 
     private val pairedDevices = BluetoothDeviceList()
     private val discoveredDevices = BluetoothDeviceList()
@@ -35,6 +34,8 @@ object BuggyBluetooth {
 
     private var bluetoothSocket: BluetoothSocket? = null
 
+
+    private lateinit var connectedThread: ConnectedThread
 
     lateinit var appContext: Context
 
@@ -76,6 +77,7 @@ object BuggyBluetooth {
             .createInsecureRfcommSocketToServiceRecord(
                 UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
 
+
         bluetoothAdapter?.cancelDiscovery()
         var toast = Toast.makeText(appContext, "Connecting...", Toast.LENGTH_SHORT)
         toast.show()
@@ -83,6 +85,12 @@ object BuggyBluetooth {
         toast = Toast.makeText(appContext, "Connected", Toast.LENGTH_SHORT)
         toast.show()
         currentDevice = mutableStateOf( device)
+
+        if (bluetoothSocket != null) {
+            connectedThread = ConnectedThread(socket = bluetoothSocket!!)
+            connectedThread.start()
+            connectedThread.write("Hello\r\n".encodeToByteArray())
+        }
         Log.println(Log.INFO, "rs.kitten.buggy.BT", "Connected: ${bluetoothSocket.toString()}")
     }
 
