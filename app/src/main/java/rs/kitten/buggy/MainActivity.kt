@@ -80,9 +80,6 @@ import rs.kitten.buggy.ui.theme.BuggyTheme
 
 class MainActivity : ComponentActivity() {
 
-    private var currentDevice: MutableState<BluetoothDevice?>? by mutableStateOf(null)
-    private var deviceText by mutableStateOf("No Bluetooth device connected.")
-
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -144,36 +141,16 @@ class MainActivity : ComponentActivity() {
             if (result.resultCode == RESULT_OK) {
                 val device = result.data?.getParcelableExtra("device", BluetoothDevice::class.java)
                 if (device != null) {
-                    currentDevice = mutableStateOf(device)
+                    BuggyBluetooth.currentDevice = mutableStateOf(device)
                     updateBluetoothInformation()
 
                     BuggyBluetooth.connect(device)
-
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        BuggyBluetooth.disconnect()
-                    }, 5000)
                 }
             }
         }
 
     private fun updateBluetoothInformation() {
-        val device = currentDevice?.value
-        deviceText = if (device == null) {
-            "No Bluetooth device connected."
-        } else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-            "${device.name}\n" +
-                    "Address: ${device.address}\n" +
-                    "Bond State: " +
-                    when (device.bondState) {
-                        BluetoothDevice.BOND_BONDING -> "Connecting"
-                        BluetoothDevice.BOND_BONDED -> "Connected"
-                        BluetoothDevice.BOND_NONE -> "Disconnected"
-                        else -> "null"
-                    }
-        } else {
-            "Application was denied Bluetooth.\nThe application will " +
-                    "not function."
-        }
+
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -183,10 +160,27 @@ class MainActivity : ComponentActivity() {
         val context = LocalContext.current
         val paddingValues = PaddingValues(8.dp)
 
+        val device = BuggyBluetooth.currentDevice?.value
         Column (modifier = Modifier.fillMaxSize()){
             Text(
                 modifier = modifier.padding(paddingValues),
-                text = deviceText
+                text = if (device == null) {
+                "No Bluetooth device connected."
+            } else if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                "${device.name}\n" +
+                        "Address: ${device.address}\n" +
+                        "Bond State: " +
+                        when (device.bondState) {
+                            BluetoothDevice.BOND_BONDING -> "Bonding"
+                            BluetoothDevice.BOND_BONDED -> "Bonded"
+                            BluetoothDevice.BOND_NONE -> "Disconnected"
+                            else -> "null"
+                        } + "\n" +
+                        "Connected?: ${BluetoothDevice::class.java.getMethod("isConnected").invoke(device)}"
+            } else {
+                "Application was denied Bluetooth.\nThe application will " +
+                        "not function."
+            }
             )
             Spacer(modifier.weight(1f))
             FilledTonalButton(
@@ -194,10 +188,18 @@ class MainActivity : ComponentActivity() {
                 modifier = modifier.align(Alignment.End)
                     .padding(horizontal = paddingValues.calculateRightPadding(LayoutDirection.Ltr)),
                 onClick = {
-                    val intent = Intent(context, BlueToothSelection::class.java)
-                    intentLauncher.launch(intent)
+                    if (device == null) {
+                        val intent = Intent(context, BlueToothSelection::class.java)
+                        intentLauncher.launch(intent)
+                    } else {
+                        BuggyBluetooth.disconnect()
+                    }
                 }) {
-                Text("Select Device")
+                if (device == null) {
+                    Text("Select Device")
+                } else {
+                    Text("Disconnect")
+                }
             }
         }
     }

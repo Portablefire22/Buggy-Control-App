@@ -9,20 +9,23 @@ import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat.getSystemService
 import java.util.UUID
 
 object BuggyBluetooth {
     var currentDevice: MutableState<BluetoothDevice?>? by mutableStateOf(null)
-    private var deviceText by mutableStateOf("No Bluetooth device connected.")
+    var deviceText by mutableStateOf("No Bluetooth device connected.")
 
     private val pairedDevices = BluetoothDeviceList()
     private val discoveredDevices = BluetoothDeviceList()
@@ -61,12 +64,24 @@ object BuggyBluetooth {
             }
         }
     }
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun connect(device: BluetoothDevice) {
+        if (ActivityCompat.checkSelfPermission(
+            appContext,
+            Manifest.permission.BLUETOOTH_SCAN
+        ) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
         bluetoothSocket = device
             .createInsecureRfcommSocketToServiceRecord(
                 UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
+
         bluetoothAdapter?.cancelDiscovery()
+        var toast = Toast.makeText(appContext, "Connecting...", Toast.LENGTH_SHORT)
+        toast.show()
         bluetoothSocket?.connect()
+        toast = Toast.makeText(appContext, "Connected", Toast.LENGTH_SHORT)
+        toast.show()
         currentDevice = mutableStateOf( device)
         Log.println(Log.INFO, "rs.kitten.buggy.BT", "Connected: ${bluetoothSocket.toString()}")
     }
@@ -74,6 +89,8 @@ object BuggyBluetooth {
     fun disconnect() {
         if (bluetoothSocket != null) {
             bluetoothSocket?.close()
+            val toast = Toast.makeText(appContext, "Disconnected", Toast.LENGTH_SHORT)
+            toast.show()
             Log.println(Log.INFO, "rs.kitten.buggy.BT", "Disconnected: ${currentDevice.toString()}")
             currentDevice = null
         }
@@ -97,6 +114,7 @@ object BuggyBluetooth {
 
 
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun getPairedDevices(counter: MutableState<Int>?): MutableList<BluetoothDevice> {
         val pD: Set<BluetoothDevice>? = BuggyBluetooth.getAdapter()?.bondedDevices
         if (counter != null && pD != null) {
