@@ -245,7 +245,13 @@ class MainActivity : ComponentActivity() {
                     BlueToothOptionsMain(modifier = Modifier.padding(8.dp))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                BTSlider(BuggyBluetooth.mSteerValue, "Steer", 2u)
+                if (BuggyBluetooth.currentDevice != null){
+                    BTSlider(BuggyBluetooth.mSteerValue, "Steer", 100u, true)
+                    BTSlider(BuggyBluetooth.mSpeedValue, "Speed", 101u, false)
+                    BTSlider(BuggyBluetooth.mProportionalValue, "Proportional", 102u, false)
+                    BTSlider(BuggyBluetooth.mIntegralValue, "Integral", 103u, false)
+                    BTSlider(BuggyBluetooth.mDerivativeValue, "Derivative", 104u, false)
+                }
             }
         }
 
@@ -318,14 +324,18 @@ fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavio
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUnsignedTypes::class)
 @Composable
-fun BTSlider(trackedValue: MutableState<Float>, name: String, packetId: UByte) {
+fun BTSlider(trackedValue: MutableState<Float>, name: String, packetId: UByte, inverse: Boolean) {
     Column {
     Slider(
         value = trackedValue.value,
         onValueChange = {
             trackedValue.value = it.roundToInt().toFloat()
-            val pack = BuggyPacket(100u)
-            pack.setData(100u - trackedValue.value.toUInt())
+            val pack = BuggyPacket(packetId)
+            if (inverse) {
+                pack.setData(100u - trackedValue.value.toUInt())
+            } else {
+                pack.setData(trackedValue.value.toUInt())
+            }
             BuggyBluetooth.write(pack.toBytes())
                         },
         colors = SliderDefaults.colors(),

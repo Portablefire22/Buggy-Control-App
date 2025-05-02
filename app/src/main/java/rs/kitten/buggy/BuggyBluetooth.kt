@@ -36,12 +36,13 @@ object BuggyBluetooth {
      var bluetoothSocket: BluetoothSocket? = null
 
 
-    var mPValue = mutableFloatStateOf( 0f)
-    var mIValue = mutableFloatStateOf(0f)
-    var mDValue = mutableFloatStateOf(0f)
 
-    var mSpeedValue = mutableStateOf(0f)
-    var mSteerValue = mutableStateOf(0f)
+    var mSpeedValue = mutableFloatStateOf(0f)
+    var mSteerValue = mutableFloatStateOf(0f)
+
+    var mProportionalValue = mutableStateOf(0f)
+    var mIntegralValue = mutableFloatStateOf(0f)
+    var mDerivativeValue = mutableStateOf(0f)
 
     private lateinit var connectedThread: ConnectedThread
 

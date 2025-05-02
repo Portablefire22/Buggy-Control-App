@@ -24,13 +24,12 @@ class ConnectedThread(socket: BluetoothSocket) : Thread() {
                 Log.d("ConnectedThread", "Read: $bytes")
                 buffer.slice(0..bytes).forEach { b ->
                     if (b.toInt() == 10) {
-                        str = str + "\n"
+                        str += "\n"
                     } else {
-                        str = str + b.toInt().toChar();
+                        str += b.toInt().toChar();
                     }
-
                 }
-                Log.d("ConnectedThread", str)
+                Log.d("ConnectedThread", "$str\n${buffer.slice(0..bytes)}")
                 off += bytes
             } catch (e: IOException) {
                 Log.e("ConnectedThread", "IO Error", e)
