@@ -16,6 +16,7 @@ class BuggyPacket(packetId: UByte) {
     private var mTypeId: Byte = 0
 
     private var mBuffer: UByteArray = UByteArray(32)
+    private var mLength: Int = 0
 
     init {
         mBuffer[0] = packetId
@@ -23,8 +24,13 @@ class BuggyPacket(packetId: UByte) {
 
     fun setData(data: UInt) {
         write4BytesToBuffer(mBuffer, 6, data)
+        mLength = 4
         write4BytesToBuffer(mBuffer, 1, 4u)
         setTypeId(BuggyPacketType.IntegerPacket)
+    }
+
+    fun setPacketId(id: UByte) {
+        mBuffer[0] = id;
     }
 
     fun setData(data: String) {
@@ -33,12 +39,13 @@ class BuggyPacket(packetId: UByte) {
             mBuffer[1 + i.toInt()] = byte.toUByte()
             i++
         }
+        mLength = i.toInt()
         write4BytesToBuffer(mBuffer, 1, i)
         setTypeId(BuggyPacketType.StringPacket)
     }
 
     fun toBytes(): UByteArray {
-        return mBuffer
+        return mBuffer.slice(0..5 +mLength).toUByteArray()
     }
 
 

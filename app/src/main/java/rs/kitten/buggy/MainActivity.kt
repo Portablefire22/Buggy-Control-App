@@ -51,6 +51,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,6 +67,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -82,6 +85,7 @@ import rs.kitten.buggy.amf.AmfSerializer
 import rs.kitten.buggy.ui.theme.BuggyTheme
 import java.io.OutputStream
 import java.nio.Buffer
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
 
@@ -241,6 +245,7 @@ class MainActivity : ComponentActivity() {
                     BlueToothOptionsMain(modifier = Modifier.padding(8.dp))
                 }
                 Spacer(modifier = Modifier.height(16.dp))
+                BTSlider(BuggyBluetooth.mSteerValue, "Steer", 2u)
             }
         }
 
@@ -309,6 +314,26 @@ fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavio
             }
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalUnsignedTypes::class)
+@Composable
+fun BTSlider(trackedValue: MutableState<Float>, name: String, packetId: UByte) {
+    Column {
+    Slider(
+        value = trackedValue.value,
+        onValueChange = {
+            trackedValue.value = it.roundToInt().toFloat()
+            val pack = BuggyPacket(100u)
+            pack.setData(100u - trackedValue.value.toUInt())
+            BuggyBluetooth.write(pack.toBytes())
+                        },
+        colors = SliderDefaults.colors(),
+        steps = 9,
+        valueRange = 0f..100f
+    )
+        Text(text = "$name: ${trackedValue.value}")
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

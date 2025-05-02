@@ -21,7 +21,7 @@ class ConnectedThread(socket: BluetoothSocket) : Thread() {
             try {
                 bytes = mInStream.read(buffer)
                 Log.d("ConnectedThread", "Read: $bytes")
-                Log.d("ConnectedThread", buffer.slice(0..<bytes).toString())
+                Log.d("ConnectedThread", buffer.slice(0..<bytes).map { x -> x.toInt().toChar() }.joinToString())
                 off += bytes
             } catch (e: IOException) {
                 Log.e("ConnectedThread", "IO Error", e)

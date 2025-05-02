@@ -17,6 +17,7 @@ import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
@@ -34,6 +35,13 @@ object BuggyBluetooth {
 
      var bluetoothSocket: BluetoothSocket? = null
 
+
+    var mPValue = mutableFloatStateOf( 0f)
+    var mIValue = mutableFloatStateOf(0f)
+    var mDValue = mutableFloatStateOf(0f)
+
+    var mSpeedValue = mutableStateOf(0f)
+    var mSteerValue = mutableStateOf(0f)
 
     private lateinit var connectedThread: ConnectedThread
 
@@ -145,6 +153,7 @@ object BuggyBluetooth {
 
     @OptIn(ExperimentalUnsignedTypes::class)
     fun write(data: UByteArray) {
+        Log.i("ConnectedThread", "Wrote $data")
         connectedThread.write(data)
     }
 }
