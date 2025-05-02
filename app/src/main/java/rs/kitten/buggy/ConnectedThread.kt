@@ -19,9 +19,18 @@ class ConnectedThread(socket: BluetoothSocket) : Thread() {
         var off = 0
         while (BuggyBluetooth.currentDevice != null) {
             try {
+                var str = ""
                 bytes = mInStream.read(buffer)
                 Log.d("ConnectedThread", "Read: $bytes")
-                Log.d("ConnectedThread", buffer.slice(0..<bytes).map { x -> x.toInt().toChar() }.joinToString())
+                buffer.slice(0..bytes).forEach { b ->
+                    if (b.toInt() == 10) {
+                        str = str + "\n"
+                    } else {
+                        str = str + b.toInt().toChar();
+                    }
+
+                }
+                Log.d("ConnectedThread", str)
                 off += bytes
             } catch (e: IOException) {
                 Log.e("ConnectedThread", "IO Error", e)
