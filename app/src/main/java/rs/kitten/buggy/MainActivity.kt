@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -74,10 +75,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat.startActivity
-
+import rs.kitten.buggy.BuggyBluetooth.appContext
+import rs.kitten.buggy.amf.AmfSerializer
 
 
 import rs.kitten.buggy.ui.theme.BuggyTheme
+import java.io.OutputStream
+import java.nio.Buffer
 
 class MainActivity : ComponentActivity() {
 
@@ -86,6 +90,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         BuggyBluetooth.SetContext(this)
+
 
         if (BuggyBluetooth.getAdapter()?.isEnabled == false) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
@@ -279,9 +284,10 @@ fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavio
         actions = {
             IconButton(onClick = {
                 expanded = true
-                val pac = BuggyPacket(3u)
-                pac.setData(25u)
-                BuggyBluetooth.write(pac.toBytes())
+                val serializer = AmfSerializer(BuggyBluetooth.bluetoothSocket?.outputStream)
+                serializer.writeObject(4213)
+                val toast = Toast.makeText(appContext, "Writing", Toast.LENGTH_SHORT)
+                toast.show()
             }) { Icon(
                 imageVector = Icons.Filled.MoreVert,
                 contentDescription = "More",

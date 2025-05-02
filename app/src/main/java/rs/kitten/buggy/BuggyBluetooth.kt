@@ -32,7 +32,7 @@ object BuggyBluetooth {
     private var bluetoothManager: BluetoothManager? = null
     private var bluetoothAdapter: BluetoothAdapter? = null
 
-    private var bluetoothSocket: BluetoothSocket? = null
+     var bluetoothSocket: BluetoothSocket? = null
 
 
     private lateinit var connectedThread: ConnectedThread
@@ -90,7 +90,6 @@ object BuggyBluetooth {
         if (bluetoothSocket != null) {
             connectedThread = ConnectedThread(socket = bluetoothSocket!!)
             connectedThread.start()
-
         }
         Log.println(Log.INFO, "rs.kitten.buggy.BT", "Connected: ${bluetoothSocket.toString()}")
     }
@@ -101,8 +100,8 @@ object BuggyBluetooth {
             //val toast = Toast.makeText(appContext, "Disconnected", Toast.LENGTH_SHORT)
             //toast.show()
             Log.println(Log.INFO, "rs.kitten.buggy.BT", "Disconnected: ${currentDevice.toString()}")
-            currentDevice = null
         }
+        currentDevice = null
     }
 
 

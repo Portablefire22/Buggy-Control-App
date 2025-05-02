@@ -16,11 +16,13 @@ class ConnectedThread(socket: BluetoothSocket) : Thread() {
     override fun run() {
         val buffer = ByteArray(1024)
         var bytes = 0
-
+        var off = 0
         while (BuggyBluetooth.currentDevice != null) {
             try {
-                bytes = mInStream.read(buffer,0 ,8)
+                bytes = mInStream.read(buffer)
+                Log.d("ConnectedThread", "Read: $bytes")
                 Log.d("ConnectedThread", buffer.slice(0..<bytes).toString())
+                off += bytes
             } catch (e: IOException) {
                 Log.e("ConnectedThread", "IO Error", e)
                 BuggyBluetooth.disconnect()
