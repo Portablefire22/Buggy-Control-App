@@ -3,9 +3,6 @@ package rs.kitten.buggy
 import android.bluetooth.BluetoothSocket
 import android.util.Log
 import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import kotlin.math.log
 
 class ConnectedThread(socket: BluetoothSocket) : Thread() {
     private var mSocket: BluetoothSocket = socket
@@ -26,10 +23,10 @@ class ConnectedThread(socket: BluetoothSocket) : Thread() {
                     if (b.toInt() == 10) {
                         str += "\n"
                     } else {
-                        str += b.toInt().toChar();
+                        str += b.toUByte().toInt().toChar();
                     }
                 }
-                Log.d("ConnectedThread", "$str\n${buffer.slice(0..bytes)}")
+                Log.d("ConnectedThread", "$str\n${buffer.slice(0..bytes).map{x -> x.toUByte()}}")
                 off += bytes
             } catch (e: IOException) {
                 Log.e("ConnectedThread", "IO Error", e)

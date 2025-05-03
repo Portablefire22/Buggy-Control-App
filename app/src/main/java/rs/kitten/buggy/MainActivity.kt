@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.CheckBox
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -42,6 +43,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -80,9 +82,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat.startActivity
 import rs.kitten.buggy.BuggyBluetooth.appContext
 import rs.kitten.buggy.amf.AmfSerializer
+import rs.kitten.buggy.amf.PacketSerializer
 
 
 import rs.kitten.buggy.ui.theme.BuggyTheme
+import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.nio.Buffer
 import kotlin.math.roundToInt
@@ -229,7 +233,7 @@ class MainActivity : ComponentActivity() {
 
         LazyColumn (
             modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.Start,
             contentPadding = PaddingValues(
                 top = paddingValues.calculateTopPadding() + 16.dp
             )
@@ -246,6 +250,7 @@ class MainActivity : ComponentActivity() {
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 if (BuggyBluetooth.currentDevice != null){
+                    BTCheckBox(BuggyBluetooth.mTakeControlValue, "Manual Control", 105u)
                     BTSlider(BuggyBluetooth.mSteerValue, "Steer", 100u, true)
                     BTSlider(BuggyBluetooth.mSpeedValue, "Speed", 101u, false)
                     BTSlider(BuggyBluetooth.mProportionalValue, "Proportional", 102u, false)
@@ -324,8 +329,30 @@ fun TopBar(modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavio
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalUnsignedTypes::class)
 @Composable
+fun BTCheckBox(trackedValue: MutableState<Boolean>, name: String, packetId: UByte) {
+    Column {
+        Text(text = "$name: ${trackedValue.value}")
+        Checkbox(
+            checked = trackedValue.value,
+            onCheckedChange = {
+                trackedValue.value = it
+                val pack = BuggyPacket(packetId)
+                pack.setData(trackedValue.value)
+                val bytes = ByteArrayOutputStream()
+                val packetSerializer = PacketSerializer(bytes)
+                packetSerializer.writePacket(pack)
+                BuggyBluetooth.write(bytes.toByteArray().toUByteArray())
+            }
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalUnsignedTypes::class)
+@Composable
 fun BTSlider(trackedValue: MutableState<Float>, name: String, packetId: UByte, inverse: Boolean) {
     Column {
+    Text(text = "$name: ${trackedValue.value}")
     Slider(
         value = trackedValue.value,
         onValueChange = {
@@ -336,13 +363,16 @@ fun BTSlider(trackedValue: MutableState<Float>, name: String, packetId: UByte, i
             } else {
                 pack.setData(trackedValue.value.toUInt())
             }
-            BuggyBluetooth.write(pack.toBytes())
+            val bytes = ByteArrayOutputStream()
+            val packetSerializer = PacketSerializer(bytes)
+            packetSerializer.writePacket(pack)
+            BuggyBluetooth.write(bytes.toByteArray().toUByteArray())
                         },
         colors = SliderDefaults.colors(),
         steps = 9,
         valueRange = 0f..100f
     )
-        Text(text = "$name: ${trackedValue.value}")
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 

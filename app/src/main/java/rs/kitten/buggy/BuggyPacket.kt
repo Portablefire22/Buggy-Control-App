@@ -1,5 +1,8 @@
 package rs.kitten.buggy
 
+import rs.kitten.buggy.amf.AmfSerializer
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
 import java.io.Serializable
 
 
@@ -8,56 +11,28 @@ enum class BuggyPacketType(val typeByte: Byte) {
     IntegerPacket(0x2),
     FloatPacket(0x3),
     ArrayPacket(0x4),
+    BoolPacket(0x5),
     UnknownPacket(0xF),
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
 class BuggyPacket(packetId: UByte) {
-    private var mTypeId: Byte = 0
-
-    private var mBuffer: UByteArray = UByteArray(32)
-    private var mLength: Int = 0
+    private var mData: Any? = null
+    private var mPacketId: UByte = 0u
 
     init {
-        mBuffer[0] = packetId
+        mPacketId = packetId
     }
 
-    fun setData(data: UInt) {
-        write4BytesToBuffer(mBuffer, 6, data)
-        mLength = 4
-        write4BytesToBuffer(mBuffer, 1, 4u)
-        setTypeId(BuggyPacketType.IntegerPacket)
+    fun getPacketId(): UByte {
+        return mPacketId
     }
 
-    fun setPacketId(id: UByte) {
-        mBuffer[0] = id;
+    fun getData(): Any? {
+        return mData
     }
 
-    fun setData(data: String) {
-        var i = 0u
-        data.toByteArray().forEach { byte ->
-            mBuffer[1 + i.toInt()] = byte.toUByte()
-            i++
-        }
-        mLength = i.toInt()
-        write4BytesToBuffer(mBuffer, 1, i)
-        setTypeId(BuggyPacketType.StringPacket)
+    fun setData(obj: Any) {
+        mData = obj
     }
-
-    fun toBytes(): UByteArray {
-        return mBuffer.slice(0..5 +mLength).toUByteArray()
-    }
-
-
-    private fun setTypeId(type: BuggyPacketType) {
-        mBuffer[5] = type.typeByte.toUByte()
-    }
-
-    private fun write4BytesToBuffer(buffer: UByteArray, offset: Int, data: UInt) {
-        buffer[offset + 0] = (data shr 24).toUByte()
-        buffer[offset + 1] = (data shr 16).toUByte()
-        buffer[offset + 2] = (data shr 8).toUByte()
-        buffer[offset + 3] = (data shr 0).toUByte()
-    }
-
 }

@@ -19,12 +19,16 @@ class AmfSerializer(out: OutputStream?) : DataOutputStream(out) {
                 write(AMF3_TRUE)
                 return
             } else {
-                AMF3_FALSE
+                write(AMF3_FALSE)
+                return
+            }
+            is UInt -> {
+                writeInt32(obj.toInt())
                 return
             }
             is Number -> {
                 if (obj is Int || obj is Short || obj is Byte) {
-                    writeInt29(obj.toInt())
+                    writeInt32(obj.toInt())
                     return
                 } else {
                     writeNumber(obj.toDouble())
@@ -41,7 +45,7 @@ class AmfSerializer(out: OutputStream?) : DataOutputStream(out) {
         // We never store strings as that would be a waste on slow hardware
         val strLen = (str.length shl 1) or 0x01
         writeInt29(strLen)
-        write(str.toByte())
+        write(str.encodeToByteArray())
     }
 
     private fun writeNumber(num: Double) {
@@ -49,15 +53,23 @@ class AmfSerializer(out: OutputStream?) : DataOutputStream(out) {
         writeDouble(num)
     }
 
-    @OptIn(ExperimentalUnsignedTypes::class)
-    private fun writeInt29(num: Int) {
+    fun writeInt32(num: Int) {
+        if (num > AMF3_INTEGER_MAX || num < AMF3_INTEGER_MIN) {
+            writeNumber(num.toDouble())
+            return
+        }
+        write(AMF3_INTEGER)
+        writeInt29(num)
+        return
+    }
 
+    @OptIn(ExperimentalUnsignedTypes::class)
+    fun writeInt29(num: Int) {
         if (num > AMF3_INTEGER_MAX || num < AMF3_INTEGER_MIN) {
             writeNumber(num.toDouble())
             return
         }
 
-        write(AMF3_INTEGER)
         var shiftNum = num
         val bf = arrayOf(0,0,0,0)
         var stop = 0
@@ -99,7 +111,7 @@ class AmfSerializer(out: OutputStream?) : DataOutputStream(out) {
     }
 
     // Kotlin doesn't have write(byte) ??
-    private fun write(b: Byte) {
+    fun write(b: Byte) {
         super.write(b.toInt() and 0xFF)
     }
 }

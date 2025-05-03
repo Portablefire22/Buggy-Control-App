@@ -18,6 +18,7 @@ import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
@@ -42,7 +43,9 @@ object BuggyBluetooth {
 
     var mProportionalValue = mutableStateOf(0f)
     var mIntegralValue = mutableFloatStateOf(0f)
-    var mDerivativeValue = mutableStateOf(0f)
+    var mDerivativeValue = mutableFloatStateOf(0f)
+
+    var mTakeControlValue = mutableStateOf(false)
 
     private lateinit var connectedThread: ConnectedThread
 
