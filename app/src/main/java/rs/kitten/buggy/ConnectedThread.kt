@@ -9,7 +9,6 @@ class ConnectedThread(socket: BluetoothSocket) : Thread() {
     private var mInStream = socket.inputStream
     private var mOutStream = socket.outputStream
 
-
     override fun run() {
         val buffer = ByteArray(1024)
         var bytes = 0
