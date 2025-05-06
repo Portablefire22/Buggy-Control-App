@@ -355,6 +355,7 @@ fun BTSlider(trackedValue: MutableState<Float>, name: String, packetId: UByte, i
     Text(text = "$name: ${trackedValue.value}")
     Slider(
         value = trackedValue.value,
+        modifier = Modifier.padding(horizontal = 16.dp),
         onValueChange = {
             trackedValue.value = it.roundToInt().toFloat()
             val pack = BuggyPacket(packetId)
@@ -369,7 +370,7 @@ fun BTSlider(trackedValue: MutableState<Float>, name: String, packetId: UByte, i
             BuggyBluetooth.write(bytes.toByteArray().toUByteArray())
                         },
         colors = SliderDefaults.colors(),
-        steps = 9,
+        steps = 19,
         valueRange = 0f..100f
     )
         Spacer(modifier = Modifier.height(16.dp))
